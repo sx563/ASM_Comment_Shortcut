@@ -1,5 +1,5 @@
 # Emu86_Comment_Shortcut_Jupyter_Notebook_Extension
-This extension adds a keyboard shortcut to comment/uncomment Emu86 Kernel code in Jupyter Notebook.
+This extension adds a keyboard shortcut to comment/uncomment [Emu86 Kernel](https://github.com/gcallah/Emu86/tree/master/kernels) code in Jupyter Notebook.
 ## Installation Instructions in Terminal
 1. `git clone https://github.com/sx563/Emu86_Comment_Shortcut_Jupyter_Notebook_Extension`
 2. `jupyter nbextension install Emu86_Comment_Shortcut_Jupyter_Notebook_Extension`
