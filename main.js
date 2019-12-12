@@ -19,64 +19,89 @@ define([
 	);
 
 	const edit_mode_shortcut = {
-		'Ctrl-Alt-e': action_toggleEmu86KernelComment
+		'Ctrl-Shift-/': action_toggleEmu86KernelComment,
+		'Cmdtrl-Shift-/': action_toggleEmu86KernelComment
 	};
-
 
 	const comment_token = ";";
 
-	function executetoggleComment(job, cm, start_line_cursor, start_text_cursor){
+	function executetoggleComment(job, cm, startLineCursor, startTextCursor){
 		if(job === "uncommentLine" ){
-			cm.doc.setCursor(start_text_cursor);
+			cm.doc.setCursor(startTextCursor);
 			CodeMirror.commands.delCharAfter(cm);
 		}
 		if(job === "commentLine"){
-			cm.doc.setCursor(start_line_cursor);
+			cm.doc.setCursor(startLineCursor);
 			cm.doc.replaceSelection(comment_token);
 		}
 	}
 
-	function iterateThroughSelectedTextDoingJob(job, cm, from_cursor, to_cursor){
-		cm.doc.setCursor(from_cursor);
-		let cursor_line = -1;
-		while(to_cursor.line != cursor_line){
-			CodeMirror.commands.goLineStart(cm);
-			let start_line_cursor = cm.doc.getCursor();
+	function fetchCursorPositions(cm){
+		CodeMirror.commands.goLineStart(cm);
+		const startLineCursor = cm.doc.getCursor();
 
-			CodeMirror.commands.goLineEnd(cm);
-			CodeMirror.commands.goLineStartSmart(cm);
-			let start_text_cursor = cm.doc.getCursor();
+		CodeMirror.commands.goLineEnd(cm);
+		CodeMirror.commands.goLineStartSmart(cm);
+		const startTextCursor = cm.doc.getCursor();
 
-			CodeMirror.commands.goLineEnd(cm);
-			let end_text_cursor = cm.doc.getCursor();
-			cursor_line = end_text_cursor.line;
+		CodeMirror.commands.goLineEnd(cm);
+		const endTextCursor = cm.doc.getCursor();
 
-			let line = cm.doc.getRange(start_text_cursor, end_text_cursor);
+		return [startLineCursor, startTextCursor, endTextCursor];
+	}
+
+	function iterateThroughSelectedTextDoingJob(job, cm, fromCursor, toCursor){
+		cm.doc.setCursor(fromCursor);
+		let cursorLine = -1;
+		while(toCursor.line != cursorLine){
+
+			const [startLineCursor, startTextCursor, endTextCursor] = [...fetchCursorPositions(cm)];
+			cursorLine = endTextCursor.line;
+
+			let line = cm.doc.getRange(startTextCursor, endTextCursor);
 			if(line.trim() !== ""){
 				if(job === "determineCommentOrUncomment"){
 					if(line[0] !== comment_token){
 						return "commentLine";
 					}
-				}else{
-					executetoggleComment(job, cm, start_line_cursor, start_text_cursor);
+				} else{
+					executetoggleComment(job, cm, startLineCursor, startTextCursor);
 				}
 			}
 
-			cm.doc.setCursor(start_line_cursor.line + 1, start_line_cursor.ch);
+			cm.doc.setCursor(startLineCursor.line + 1, startLineCursor.ch);
 		}
 		return "uncommentLine";
+	}
+
+	function toggleSingleComment(cm, cursor){
+		cm.doc.setCursor(cursor);
+		const [startLineCursor, startTextCursor, endTextCursor] = [...fetchCursorPositions(cm)];
+
+		let line = cm.doc.getRange(startTextCursor, endTextCursor);
+		if(line.trim() !== ""){
+			if (line[0] !== comment_token){
+				executetoggleComment('commentLine', cm, startLineCursor, startTextCursor);
+			}
+			else{
+				executetoggleComment('uncommentLine', cm, startLineCursor, startTextCursor);
+			}
+		}
 	}
 
 	function toggleEmu86KernelComment(){
 		const cm = Jupyter.notebook.get_selected_cell().code_mirror
 
-		const from_cursor = cm.doc.getCursor("from");
-		const to_cursor = cm.doc.getCursor("to");
-
-		const toggleCommentJob = iterateThroughSelectedTextDoingJob("determineCommentOrUncomment", cm, from_cursor, to_cursor);
-		iterateThroughSelectedTextDoingJob(toggleCommentJob, cm, from_cursor, to_cursor);
-
-		cm.doc.setSelection(from_cursor, to_cursor);
+		const fromCursor = cm.doc.getCursor("from");
+		const toCursor = cm.doc.getCursor("to");
+		
+		if (fromCursor.line === toCursor.line){
+			toggleSingleComment(cm, fromCursor)
+		} else{
+			const toggleCommentJob = iterateThroughSelectedTextDoingJob("determineCommentOrUncomment", cm, fromCursor, toCursor);
+			iterateThroughSelectedTextDoingJob(toggleCommentJob, cm, fromCursor, toCursor);
+		}
+		cm.doc.setSelection(fromCursor, toCursor);
 	}
 
 	return {
