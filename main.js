@@ -74,33 +74,14 @@ define([
 		return "uncommentLine";
 	}
 
-	function toggleSingleComment(cm, cursor){
-		cm.doc.setCursor(cursor);
-		const [startLineCursor, startTextCursor, endTextCursor] = [...fetchCursorPositions(cm)];
-
-		let line = cm.doc.getRange(startTextCursor, endTextCursor);
-		if(line.trim() !== ""){
-			if (line[0] !== comment_token){
-				executetoggleComment('commentLine', cm, startLineCursor, startTextCursor);
-			}
-			else{
-				executetoggleComment('uncommentLine', cm, startLineCursor, startTextCursor);
-			}
-		}
-	}
-
 	function toggleEmu86KernelComment(){
 		const cm = Jupyter.notebook.get_selected_cell().code_mirror
 
 		const fromCursor = cm.doc.getCursor("from");
 		const toCursor = cm.doc.getCursor("to");
 		
-		if (fromCursor.line === toCursor.line){
-			toggleSingleComment(cm, fromCursor)
-		} else{
-			const toggleCommentJob = iterateThroughSelectedTextDoingJob("determineCommentOrUncomment", cm, fromCursor, toCursor);
-			iterateThroughSelectedTextDoingJob(toggleCommentJob, cm, fromCursor, toCursor);
-		}
+		const toggleCommentJob = iterateThroughSelectedTextDoingJob("determineCommentOrUncomment", cm, fromCursor, toCursor);
+		iterateThroughSelectedTextDoingJob(toggleCommentJob, cm, fromCursor, toCursor);
 		cm.doc.setSelection(fromCursor, toCursor);
 	}
 
